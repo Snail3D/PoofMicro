@@ -19,14 +19,17 @@ class ESP32Hardware:
     def list_ports(self) -> List[Dict[str, str]]:
         """List available serial ports"""
         ports = []
-        for port in serial.tools.list_ports.comports():
-            ports.append({
-                "device": port.device,
-                "description": port.description or "",
-                "hwid": port.hwid or "",
-                "vid": hex(port.vid) if hasattr(port, 'vid') else "0000",
-                "pid": hex(port.pid) if hasattr(port, 'pid') else "0000",
-            })
+        try:
+            for port in serial.tools.list_ports.comports():
+                ports.append({
+                    "device": port.device,
+                    "description": port.description or "",
+                    "hwid": port.hwid or "",
+                    "vid": hex(port.vid) if hasattr(port, 'vid') and port.vid else "0000",
+                    "pid": hex(port.pid) if hasattr(port, 'pid') and port.pid else "0000",
+                })
+        except Exception as e:
+            print(f"Error listing ports: {e}")
         return ports
 
     async def detect_esp32(self) -> Optional[str]:

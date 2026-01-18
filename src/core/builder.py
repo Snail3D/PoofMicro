@@ -66,16 +66,23 @@ class ESP32Builder:
 
         # Detect ESP32 hardware if available
         detected_esp32 = await hardware.detect_esp32()
-        hardware_context = ""
-        if detected_esp32:
-            hardware_context = f"\n\nHardware Status: ESP32 detected on {detected_esp32}"
 
         # Build conversation context with PRD-building focus
         conversation = history or []
         conversation.append({"role": "user", "content": message})
 
-        # System prompt for full AI autonomy
-        system_prompt = f"""You are an autonomous ESP32 project architect and builder. You actively build a comprehensive PRD (Product Requirements Document) as the conversation progresses.
+        # Build hardware info
+        if detected_esp32:
+            hardware_context = f"\n\nHardware Status: ESP32 detected on {detected_esp32}"
+            detected_str = "true"
+            port_str = detected_esp32
+        else:
+            hardware_context = '\n\nHardware Status: No ESP32 detected - will simulate'
+            detected_str = "false"
+            port_str = "simulation"
+
+        # System prompt for full AI autonomy (using format instead of f-string to avoid issues)
+        prompt_template = """You are an autonomous ESP32 project architect and builder. You actively build a comprehensive PRD (Product Requirements Document) as the conversation progresses.
 
 Your capabilities:
 - Detect and understand project requirements from natural language
@@ -85,7 +92,7 @@ Your capabilities:
 - Guide the user through technical decisions
 - When ready, initiate the Ralph Sequence (automated build-test-deploy loop)
 
-Current Hardware Status:{hardware_context if detected_esp32 else '\n\nHardware Status: No ESP32 detected - will simulate'}
+Current Hardware Status:{}
 
 You are currently in the GATHERING phase of the PRD process. As we discuss:
 1. Extract project name, board type, and core features
@@ -106,8 +113,8 @@ Response format:
     "libraries": [{{"name": "...", "description": "..."}}],
     "materials": [{{"name": "...", "description": "...", "category": "..."}}],
     "hardware": {{
-      "detected": {detected_esp32 is not null},
-      "port": "{detected_esp32 or 'simulation'}"
+      "detected": {},
+      "port": "{}"
     }}
   }},
   "readyToBuild": true/false,
@@ -115,6 +122,8 @@ Response format:
 }}
 
 Be conversational but thorough. Build the PRD incrementally. Ask questions when unclear."""
+
+        system_prompt = prompt_template.format(hardware_context, detected_str, port_str)
 
         try:
             response = self.client.chat.completions.create(
