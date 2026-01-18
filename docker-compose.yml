@@ -1,0 +1,24 @@
+version: '3.8'
+
+services:
+  poofmicro:
+    build: .
+    container_name: poofmicro
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./esp32_projects:/app/esp32_projects
+      - ./logs:/app/logs
+      - /dev:/dev
+    environment:
+      - GLM_API_KEY=${GLM_API_KEY}
+      - GLM_API_BASE=${GLM_API_BASE:-https://open.bigmodel.cn/api/paas/v4/}
+      - GLM_MODEL=${GLM_MODEL:-glm-4.7}
+      - HOST=0.0.0.0
+      - PORT=8000
+      - DEBUG=false
+    devices:
+      - /dev/ttyUSB0:/dev/ttyUSB0
+      - /dev/ttyACM0:/dev/ttyACM0
+    restart: unless-stopped
+    privileged: true
