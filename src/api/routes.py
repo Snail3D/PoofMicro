@@ -6,6 +6,7 @@ from pathlib import Path
 import json
 
 from src.core.builder import ESP32Builder, ESP32Simulator, BuildContext, BuildResult
+from src.services.esp32_hardware import hardware
 
 
 # Request/Response Models
@@ -204,6 +205,85 @@ async def build_vision_project(request: VisionProjectRequest) -> BuildResult:
             request.board_type
         )
         return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# Hardware API Endpoints
+
+@router.get("/hardware/ports")
+async def list_serial_ports() -> List[Dict[str, str]]:
+    """List available serial ports"""
+    try:
+        return hardware.list_ports()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/hardware/detect")
+async def detect_esp32() -> Dict[str, Any]:
+    """Detect connected ESP32"""
+    try:
+        port = await hardware.detect_esp32()
+        return {
+            "detected": port is not None,
+            "port": port,
+            "all_ports": hardware.list_ports()
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/hardware/upload")
+async def upload_firmware(project_name: str, port: Optional[str] = None) -> Dict[str, Any]:
+    """Upload firmware to ESP32"""
+    try:
+        project_path = Path(builder.projects_path) / project_name.replace(" ", "_").lower()
+
+        if not project_path.exists():
+            raise HTTPException(status_code=404, detail="Project not found")
+
+        # Find the firmware file (could be .bin or use platformio)
+        # For now, use platformio to build and upload
+        result = await hardware.upload_firmware(project_path, port)
+
+        if result.get("success"):
+            return {
+                "success": True,
+                "port": result.get("port"),
+                "message": "Firmware uploaded successfully"
+            }
+        else:
+            raise HTTPException(status_code=500, detail=result.get("error", "Upload failed"))
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/hardware/test")
+async def test_on_hardware(project_name: str, test_duration: float = 10.0) -> Dict[str, Any]:
+    """Test uploaded firmware on ESP32 hardware"""
+    try:
+        # Read serial output from the device
+        output = await hardware.read_serial(duration=test_duration)
+
+        return {
+            "success": True,
+            "output": output,
+            "test_passed": any("PASS" in line.upper() or "OK" in line.upper() or "READY" in line.upper() for line in output)
+        }
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/hardware/status")
+async def hardware_status() -> Dict[str, Any]:
+    """Get hardware connection status"""
+    try:
+        return hardware.get_status()
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

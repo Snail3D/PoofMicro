@@ -60,39 +60,61 @@ class ESP32Builder:
         self.projects_path.mkdir(exist_ok=True)
 
     async def chat_conversation(self, message: str, history: List[Dict[str, str]] = None) -> Dict[str, Any]:
-        """Handle conversational building with real-time project generation"""
+        """Handle AI-driven conversational building with full autonomy"""
 
-        # Build conversation context
+        from src.services.esp32_hardware import hardware
+
+        # Detect ESP32 hardware if available
+        detected_esp32 = await hardware.detect_esp32()
+        hardware_context = ""
+        if detected_esp32:
+            hardware_context = f"\n\nHardware Status: ESP32 detected on {detected_esp32}"
+
+        # Build conversation context with PRD-building focus
         conversation = history or []
         conversation.append({"role": "user", "content": message})
 
-        # System prompt for the AI
-        system_prompt = """You are an expert ESP32 builder assistant. Your job is to:
-1. Understand what the user wants to build
-2. Ask clarifying questions when needed
-3. Extract project specifications from the conversation
-4. Provide helpful technical guidance
+        # System prompt for full AI autonomy
+        system_prompt = f"""You are an autonomous ESP32 project architect and builder. You actively build a comprehensive PRD (Product Requirements Document) as the conversation progresses.
 
-When you have gathered enough information (project name, board type, main features), respond with a JSON object that includes the project specification and a "ready_to_build" flag set to true.
+Your capabilities:
+- Detect and understand project requirements from natural language
+- Search for and recommend appropriate libraries
+- Identify required components and materials
+- Build complete project specifications
+- Guide the user through technical decisions
+- When ready, initiate the Ralph Sequence (automated build-test-deploy loop)
 
-Your response should be conversational and helpful. When ready to build, include a JSON block at the end.
+Current Hardware Status:{hardware_context if detected_esp32 else '\n\nHardware Status: No ESP32 detected - will simulate'}
 
-Response format when ready to build:
-{
-  "message": "Your conversational response here...",
-  "projectSpec": {
+You are currently in the GATHERING phase of the PRD process. As we discuss:
+1. Extract project name, board type, and core features
+2. Identify required libraries (proactively search/recommend)
+3. List hardware components needed
+4. Build the complete specification
+
+When the PRD is complete, respond with JSON containing the full spec and "readyToBuild": true.
+
+Response format:
+{{
+  "message": "Your conversational response with PRD updates...",
+  "prdUpdate": {{
     "projectName": "Name",
-    "boardType": "esp32/esp32-cam/etc",
-    "description": "Description",
-    "features": ["wifi", "sensors", etc],
-    "libraries": [{"name": "...", "description": "..."}],
-    "materials": [{"name": "...", "description": "..."}],
-    "boardContext": "Optional context"
-  },
-  "readyToBuild": true
-}
+    "boardType": "esp32/esp32-cam/esp32-s3/etc",
+    "description": "Clear description",
+    "features": ["feature1", "feature2"],
+    "libraries": [{{"name": "...", "description": "..."}}],
+    "materials": [{{"name": "...", "description": "...", "category": "..."}}],
+    "hardware": {{
+      "detected": {detected_esp32 is not null},
+      "port": "{detected_esp32 or 'simulation'}"
+    }}
+  }},
+  "readyToBuild": true/false,
+  "actions": ["search:query", "detect:hardware", etc]
+}}
 
-When not ready, just respond conversationally and ask follow-up questions."""
+Be conversational but thorough. Build the PRD incrementally. Ask questions when unclear."""
 
         try:
             response = self.client.chat.completions.create(
@@ -101,54 +123,50 @@ When not ready, just respond conversationally and ask follow-up questions."""
                     {"role": "system", "content": system_prompt},
                     *conversation
                 ],
-                temperature=0.7,
+                temperature=0.8,
             )
 
             content = response.choices[0].message.content.strip()
 
-            # Try to parse as JSON first
-            try:
-                # Clean up markdown code blocks
-                json_content = content
-                if "```json" in json_content:
-                    json_content = json_content.split("```json")[1].split("```")[0].strip()
-                elif "```" in json_content:
-                    json_content = json_content.split("```")[1].split("```")[0].strip()
+            # Try to extract JSON from the response
+            json_content = content
+            if "```json" in json_content:
+                json_content = json_content.split("```json")[1].split("```")[0].strip()
+            elif "```" in json_content:
+                json_content = json_content.split("```")[1].split("```")[0].strip()
 
+            try:
                 parsed = json.loads(json_content)
 
-                # If we got a full response with projectSpec
-                if "projectSpec" in parsed:
-                    return {
-                        "message": parsed.get("message", content),
-                        "projectSpec": parsed["projectSpec"],
-                        "needsInput": False
+                return {
+                    "message": parsed.get("message", content),
+                    "projectSpec": parsed.get("prdUpdate", parsed.get("projectSpec")),
+                    "needsInput": not parsed.get("readyToBuild", False),
+                    "actions": parsed.get("actions", []),
+                    "hardware": {
+                        "detected": detected_esp32 is not None,
+                        "port": detected_esp32 or "simulation"
                     }
-
-                # If just a message was returned
-                if "message" in parsed:
-                    return {
-                        "message": parsed["message"],
-                        "projectSpec": None,
-                        "needsInput": True
-                    }
+                }
 
             except json.JSONDecodeError:
-                # Not JSON, treat as conversational response
-                pass
-
-            # Return conversational response
-            return {
-                "message": content,
-                "projectSpec": None,
-                "needsInput": True
-            }
+                # Conversational response without JSON
+                return {
+                    "message": content,
+                    "projectSpec": None,
+                    "needsInput": True,
+                    "hardware": {
+                        "detected": detected_esp32 is not None,
+                        "port": detected_esp32 or "simulation"
+                    }
+                }
 
         except Exception as e:
             return {
                 "message": f"I encountered an error: {str(e)}. Please try again.",
                 "projectSpec": None,
-                "needsInput": True
+                "needsInput": True,
+                "hardware": {"detected": False, "port": None}
             }
 
     async def search_libraries(self, query: str, board_type: str = "esp32") -> List[Dict[str, str]]:
