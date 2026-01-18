@@ -39,6 +39,22 @@ class ApiKeyUpdateRequest(BaseModel):
     api_key: str
 
 
+class VisionImageSearchRequest(BaseModel):
+    object_name: str
+    max_images: int = 10
+
+
+class VisionModelRequest(BaseModel):
+    object_name: str
+    object_description: str = ""
+
+
+class VisionProjectRequest(BaseModel):
+    project_name: str
+    objects_to_detect: List[str]
+    board_type: str = "esp32-cam"
+
+
 # Router
 router = APIRouter(prefix="/api")
 
@@ -132,6 +148,42 @@ async def stop_simulation(project_name: str) -> Dict[str, str]:
         raise HTTPException(status_code=404, detail="Simulation not found")
 
     return {"message": "Simulation stopped"}
+
+
+# Vision API Endpoints
+
+@router.post("/vision/search-images")
+async def search_object_images(request: VisionImageSearchRequest) -> List[Dict[str, Any]]:
+    """Search for images of an object for training detection models"""
+    try:
+        results = await builder.search_object_images(request.object_name, request.max_images)
+        return results
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/vision/create-model")
+async def create_detection_model(request: VisionModelRequest) -> Dict[str, Any]:
+    """Create custom detection model configuration for ESP32"""
+    try:
+        result = await builder.create_detection_model(request.object_name, request.object_description)
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/vision/build")
+async def build_vision_project(request: VisionProjectRequest) -> BuildResult:
+    """Build complete ESP32-CAM vision project with custom detection"""
+    try:
+        result = await builder.generate_vision_project(
+            request.project_name,
+            request.objects_to_detect,
+            request.board_type
+        )
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.get("/projects")

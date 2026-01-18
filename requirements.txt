@@ -5,7 +5,7 @@ pydantic==2.5.3
 python-dotenv==1.0.0
 
 # GLM 4.7 API
-zhipuai==2.1.5.20240110
+zhipuai==2.1.5.20250825
 httpx==0.26.0
 
 # Web UI
@@ -13,10 +13,10 @@ jinja2==3.1.3
 aiofiles==23.2.1
 websockets==12.0
 
-# ESP32 Development
-platformio==6.1.11
-pyserial==3.5
-esptool==4.6.2
+# ESP32 Development (optional - install separately if needed)
+# platformio==6.1.11
+# pyserial==3.5
+# esptool==4.6.2
 
 # Testing
 pytest==7.4.4
@@ -27,7 +27,3 @@ playwright==1.41.0
 docker==7.0.0
 requests==2.31.0
 python-multipart==0.0.6
-
-# Async utilities
-asyncio==3.4.3
-aiohttp==3.9.1
