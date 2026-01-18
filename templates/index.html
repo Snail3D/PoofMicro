@@ -16,8 +16,14 @@
                         <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
                     </svg>
                     <h1>PoofMicro</h1>
+                    <span class="badge">ESP32 Builder</span>
                 </div>
                 <div class="header-actions">
+                    <button class="icon-btn" id="newChatBtn" title="New Chat">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <path d="M12 5v14M5 12h14"/>
+                        </svg>
+                    </button>
                     <button class="icon-btn" id="settingsBtn" title="Settings">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
                             <circle cx="12" cy="12" r="3"/>
@@ -28,184 +34,144 @@
             </div>
         </header>
 
-        <!-- Main Content -->
+        <!-- Main Chat Area -->
         <main class="main-content">
-            <div class="grid-container">
-                <!-- Project Card -->
-                <div class="card project-card">
-                    <div class="card-header">
-                        <svg class="card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                            <rect x="3" y="3" width="18" height="18" rx="2"/>
-                            <path d="M3 9h18M9 21V9"/>
-                        </svg>
-                        <h2>New Project</h2>
-                    </div>
-                    <div class="card-body">
-                        <form id="projectForm" class="form">
-                            <div class="form-group">
-                                <label for="projectName">Project Name</label>
-                                <input type="text" id="projectName" name="projectName" placeholder="My ESP32 Project" required>
+            <div id="chatContainer" class="chat-container">
+                <div id="messagesContainer" class="messages-container">
+                    <!-- Welcome Message -->
+                    <div class="message assistant-message">
+                        <div class="message-avatar">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+                            </svg>
+                        </div>
+                        <div class="message-content">
+                            <div class="message-text">
+                                Welcome to PoofMicro! I can help you build ESP32 projects.
+                                <br><br>
+                                Tell me what you want to build, or describe your project idea.
+                                I'll help you design it, find the right components, and generate the code.
                             </div>
-
-                            <div class="form-group">
-                                <label for="boardType">ESP32 Board</label>
-                                <select id="boardType" name="boardType">
-                                    <option value="esp32">ESP32 (Original)</option>
-                                    <option value="esp32s2">ESP32-S2</option>
-                                    <option value="esp32s3">ESP32-S3</option>
-                                    <option value="esp32c3">ESP32-C3</option>
-                                    <option value="esp32c6">ESP32-C6</option>
-                                </select>
-                            </div>
-
-                            <div class="form-group">
-                                <label for="description">Description</label>
-                                <textarea id="description" name="description" rows="3" placeholder="Describe what you want to build..." required></textarea>
-                            </div>
-
-                            <div class="form-group">
-                                <label>Features</label>
-                                <div class="chip-group">
-                                    <label class="chip">
-                                        <input type="checkbox" name="features" value="wifi">
-                                        <span>Wi-Fi</span>
-                                    </label>
-                                    <label class="chip">
-                                        <input type="checkbox" name="features" value="ap">
-                                        <span>Access Point</span>
-                                    </label>
-                                    <label class="chip">
-                                        <input type="checkbox" name="features" value="webserver">
-                                        <span>Web Server</span>
-                                    </label>
-                                    <label class="chip">
-                                        <input type="checkbox" name="features" value="mqtt">
-                                        <span>MQTT</span>
-                                    </label>
-                                    <label class="chip">
-                                        <input type="checkbox" name="features" value="bluetooth">
-                                        <span>Bluetooth</span>
-                                    </label>
-                                    <label class="chip">
-                                        <input type="checkbox" name="features" value="sensors">
-                                        <span>Sensors</span>
-                                    </label>
-                                </div>
-                            </div>
-
-                            <button type="submit" class="btn btn-primary">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                                    <polygon points="5 3 19 12 5 21 5 3"/>
-                                </svg>
-                                Generate Project
-                            </button>
-                        </form>
-                    </div>
-                </div>
-
-                <!-- Search Card -->
-                <div class="card search-card">
-                    <div class="card-header">
-                        <svg class="card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                            <circle cx="11" cy="11" r="8"/>
-                            <path d="M21 21l-4.35-4.35"/>
-                        </svg>
-                        <h2>Search Libraries</h2>
-                    </div>
-                    <div class="card-body">
-                        <div class="search-box">
-                            <input type="text" id="librarySearch" placeholder="Search for libraries (e.g., DHT, OLED, Servo)...">
-                            <button id="librarySearchBtn" class="icon-btn">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                                    <circle cx="11" cy="11" r="8"/>
-                                    <path d="M21 21l-4.35-4.35"/>
-                                </svg>
-                            </button>
-                        </div>
-                        <div id="libraryResults" class="results-list"></div>
-                    </div>
-                </div>
-
-                <!-- Materials Card -->
-                <div class="card materials-card">
-                    <div class="card-header">
-                        <svg class="card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                            <rect x="2" y="7" width="20" height="14" rx="2"/>
-                            <path d="M12 22V7M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/>
-                            <path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/>
-                        </svg>
-                        <h2>Hardware Materials</h2>
-                    </div>
-                    <div class="card-body">
-                        <div class="search-box">
-                            <input type="text" id="materialSearch" placeholder="Search for components (e.g., temperature sensor, relay)...">
-                            <button id="materialSearchBtn" class="icon-btn">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                                    <circle cx="11" cy="11" r="8"/>
-                                    <path d="M21 21l-4.35-4.35"/>
-                                </svg>
-                            </button>
-                        </div>
-                        <div id="materialResults" class="results-list"></div>
-                    </div>
-                </div>
-
-                <!-- Context Card -->
-                <div class="card context-card">
-                    <div class="card-header">
-                        <svg class="card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                            <polyline points="14 2 14 8 20 8"/>
-                            <line x1="16" y1="13" x2="8" y2="13"/>
-                            <line x1="16" y1="17" x2="8" y2="17"/>
-                        </svg>
-                        <h2>Board Context</h2>
-                    </div>
-                    <div class="card-body">
-                        <div class="form-group">
-                            <label for="boardContext">Additional Context</label>
-                            <textarea id="boardContext" rows="6" placeholder="Describe your specific board, pin connections, or any custom requirements..."></textarea>
-                        </div>
-                        <div class="form-group">
-                            <label for="customCode">Custom Code Snippet</label>
-                            <textarea id="customCode" rows="4" placeholder="Paste any existing code to include..."></textarea>
+                            <div class="message-time">Just now</div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Projects Card -->
-                <div class="card projects-card">
-                    <div class="card-header">
-                        <svg class="card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                            <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+                <!-- Typing Indicator -->
+                <div id="typingIndicator" class="typing-indicator" style="display: none;">
+                    <div class="typing-avatar">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
                         </svg>
-                        <h2>Projects</h2>
                     </div>
-                    <div class="card-body">
-                        <div id="projectsList" class="projects-list">
-                            <div class="empty-state">No projects yet. Create your first project above.</div>
-                        </div>
+                    <div class="typing-dots">
+                        <span></span><span></span><span></span>
                     </div>
                 </div>
 
-                <!-- Build Output Card -->
-                <div class="card output-card">
-                    <div class="card-header">
-                        <svg class="card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                            <polyline points="4 17 10 11 4 5"/>
-                            <line x1="12" y1="19" x2="20" y2="19"/>
-                        </svg>
-                        <h2>Build Output</h2>
-                    </div>
-                    <div class="card-body">
-                        <div id="buildOutput" class="terminal-output">
-                            <div class="terminal-line">PoofMicro ESP32 Builder ready...</div>
-                            <div class="terminal-line">Waiting for project generation...</div>
-                        </div>
+                <!-- Quick Actions -->
+                <div id="quickActions" class="quick-actions">
+                    <div class="quick-actions-title">What would you like to build?</div>
+                    <div class="quick-actions-grid">
+                        <button class="quick-action-btn" data-prompt="I want to build a WiFi weather station with temperature and humidity sensors">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/>
+                            </svg>
+                            Weather Station
+                        </button>
+                        <button class="quick-action-btn" data-prompt="I want to build an ESP32-CAM object detection system to recognize cats and dogs">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+                                <circle cx="12" cy="13" r="4"/>
+                            </svg>
+                            Camera Detection
+                        </button>
+                        <button class="quick-action-btn" data-prompt="I want to build a home automation controller with relay switches and MQTT">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                <rect x="2" y="2" width="20" height="20" rx="5" ry="5"/>
+                                <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/>
+                                <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/>
+                            </svg>
+                            Smart Home
+                        </button>
+                        <button class="quick-action-btn" data-prompt="I want to build an IoT sensor network with multiple ESP32s communicating via MQTT">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                <path d="M5 12.55a11 11 0 0 1 14.08 0"/>
+                                <path d="M1.42 9a16 16 0 0 1 21.16 0"/>
+                                <path d="M8.53 16.11a6 6 0 0 1 6.95 0"/>
+                                <line x1="12" y1="20" x2="12.01" y2="20"/>
+                            </svg>
+                            IoT Network
+                        </button>
+                        <button class="quick-action-btn" data-prompt="I want to build an LED controller with PWM dimming and color control">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                <path d="M12 2a7 7 0 0 1 7 7c0 2.38-1.19 4.47-3 5.74V17a2 2 0 0 1-2 2H10a2 2 0 0 1-2-2v-2.26C6.19 13.47 5 11.38 5 9a7 7 0 0 1 7-7z"/>
+                            </svg>
+                            LED Controller
+                        </button>
+                        <button class="quick-action-btn" data-prompt="I want to build a data logger with SD card storage and web interface">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                                <polyline points="14 2 14 8 20 8"/>
+                                <line x1="16" y1="13" x2="8" y2="13"/>
+                                <line x1="16" y1="17" x2="8" y2="17"/>
+                            </svg>
+                            Data Logger
+                        </button>
                     </div>
                 </div>
             </div>
+
+            <!-- Input Area -->
+            <div class="input-area">
+                <div class="input-container">
+                    <textarea id="messageInput" placeholder="Describe your ESP32 project..." rows="1"></textarea>
+                    <button id="sendBtn" class="send-btn" disabled>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <line x1="22" y1="2" x2="11" y2="13"/>
+                            <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+                        </svg>
+                    </button>
+                </div>
+                <div class="input-footer">
+                    <span>Powered by GLM 4.7</span>
+                    <span>ESP32 Builder</span>
+                </div>
+            </div>
         </main>
+
+        <!-- Build Modal -->
+        <div id="buildModal" class="modal">
+            <div class="modal-content build-modal">
+                <div class="modal-header">
+                    <h2>Build Project</h2>
+                    <button class="icon-btn" id="closeBuildModal">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <line x1="18" y1="6" x2="6" y2="18"/>
+                            <line x1="6" y1="6" x2="18" y2="18"/>
+                        </svg>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div id="buildSummary" class="build-summary"></div>
+                    <div class="build-actions">
+                        <button id="confirmBuildBtn" class="btn btn-primary">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                <polygon points="5 3 19 12 5 21 5 3"/>
+                            </svg>
+                            Generate Project
+                        </button>
+                    </div>
+                    <div id="buildProgress" class="build-progress" style="display: none;">
+                        <div class="progress-bar">
+                            <div id="progressFill" class="progress-fill"></div>
+                        </div>
+                        <div id="progressStatus" class="progress-status">Initializing...</div>
+                    </div>
+                    <div id="buildResult" class="build-result" style="display: none;"></div>
+                </div>
+            </div>
+        </div>
 
         <!-- Settings Modal -->
         <div id="settingsModal" class="modal">

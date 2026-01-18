@@ -3,6 +3,7 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from typing import List, Optional, Dict, Any
 from pathlib import Path
+import json
 
 from src.core.builder import ESP32Builder, ESP32Simulator, BuildContext, BuildResult
 
@@ -55,6 +56,17 @@ class VisionProjectRequest(BaseModel):
     board_type: str = "esp32-cam"
 
 
+class ChatRequest(BaseModel):
+    message: str
+    history: List[Dict[str, str]] = []
+
+
+class ChatResponse(BaseModel):
+    message: str
+    projectSpec: Optional[Dict[str, Any]] = None
+    needsInput: bool = False
+
+
 # Router
 router = APIRouter(prefix="/api")
 
@@ -67,6 +79,16 @@ simulator = ESP32Simulator()
 async def health_check():
     """Health check endpoint"""
     return {"status": "healthy", "service": "PoofMicro ESP32 Builder"}
+
+
+@router.post("/chat")
+async def chat(request: ChatRequest) -> ChatResponse:
+    """Conversational ESP32 builder using GLM 4.7"""
+    try:
+        response = await builder.chat_conversation(request.message, request.history)
+        return response
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.post("/search/libraries")

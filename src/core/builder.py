@@ -59,6 +59,98 @@ class ESP32Builder:
         self.projects_path = Path(settings.esp32_projects_path)
         self.projects_path.mkdir(exist_ok=True)
 
+    async def chat_conversation(self, message: str, history: List[Dict[str, str]] = None) -> Dict[str, Any]:
+        """Handle conversational building with real-time project generation"""
+
+        # Build conversation context
+        conversation = history or []
+        conversation.append({"role": "user", "content": message})
+
+        # System prompt for the AI
+        system_prompt = """You are an expert ESP32 builder assistant. Your job is to:
+1. Understand what the user wants to build
+2. Ask clarifying questions when needed
+3. Extract project specifications from the conversation
+4. Provide helpful technical guidance
+
+When you have gathered enough information (project name, board type, main features), respond with a JSON object that includes the project specification and a "ready_to_build" flag set to true.
+
+Your response should be conversational and helpful. When ready to build, include a JSON block at the end.
+
+Response format when ready to build:
+{
+  "message": "Your conversational response here...",
+  "projectSpec": {
+    "projectName": "Name",
+    "boardType": "esp32/esp32-cam/etc",
+    "description": "Description",
+    "features": ["wifi", "sensors", etc],
+    "libraries": [{"name": "...", "description": "..."}],
+    "materials": [{"name": "...", "description": "..."}],
+    "boardContext": "Optional context"
+  },
+  "readyToBuild": true
+}
+
+When not ready, just respond conversationally and ask follow-up questions."""
+
+        try:
+            response = self.client.chat.completions.create(
+                model=self.model,
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    *conversation
+                ],
+                temperature=0.7,
+            )
+
+            content = response.choices[0].message.content.strip()
+
+            # Try to parse as JSON first
+            try:
+                # Clean up markdown code blocks
+                json_content = content
+                if "```json" in json_content:
+                    json_content = json_content.split("```json")[1].split("```")[0].strip()
+                elif "```" in json_content:
+                    json_content = json_content.split("```")[1].split("```")[0].strip()
+
+                parsed = json.loads(json_content)
+
+                # If we got a full response with projectSpec
+                if "projectSpec" in parsed:
+                    return {
+                        "message": parsed.get("message", content),
+                        "projectSpec": parsed["projectSpec"],
+                        "needsInput": False
+                    }
+
+                # If just a message was returned
+                if "message" in parsed:
+                    return {
+                        "message": parsed["message"],
+                        "projectSpec": None,
+                        "needsInput": True
+                    }
+
+            except json.JSONDecodeError:
+                # Not JSON, treat as conversational response
+                pass
+
+            # Return conversational response
+            return {
+                "message": content,
+                "projectSpec": None,
+                "needsInput": True
+            }
+
+        except Exception as e:
+            return {
+                "message": f"I encountered an error: {str(e)}. Please try again.",
+                "projectSpec": None,
+                "needsInput": True
+            }
+
     async def search_libraries(self, query: str, board_type: str = "esp32") -> List[Dict[str, str]]:
         """Search for ESP32 libraries using GLM 4.7"""
         prompt = f"""Search for ESP32 libraries related to: {query}
